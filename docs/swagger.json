@@ -1,0 +1,50 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "the purpose of this service is to provide a\nmecahnism for experts to do their things.",
+    "title": "My cool service.",
+    "license": {
+      "name": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
+    },
+    "version": "0.0.1"
+  },
+  "host": "localhost:8080",
+  "paths": {
+    "/user/Login": {
+      "post": {
+        "description": "用于系统用户的登录",
+        "tags": [
+          "user"
+        ],
+        "summary": "登录",
+        "operationId": "addUser",
+        "parameters": [
+          {
+            "type": "int",
+            "description": "学号",
+            "name": "studentId",
+            "in": "body",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "密码",
+            "name": "password",
+            "in": "body",
+            "required": true
+          }
+        ]
+      }
+    }
+  }
+}

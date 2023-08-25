@@ -1,0 +1,15 @@
+server:
+  host: localhost
+  port: 8001
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: forget123
+  dbname: student_admin
+  MaxIdleConns: 10
+  MaxOpenConns: 5
+redis:
+  address: localhost:6379
+  password:
