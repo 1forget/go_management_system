@@ -9,15 +9,24 @@ import (
 
 func main() {
 
+	//连接数据库
 	utils.SetupDB()
-
+	//连接redis
+	utils.SetUpRedis()
 	//初始化JWT
 	secretKey := "weomssaxiao148"
 	utils.NewJWTManager(secretKey)
 
+	//设置白名单
+	whitelist := []string{
+		"/schoolManagement/user/createUser",
+		"/schoolManagement/user/login",
+	}
+
 	r := gin.Default()
 	//cors
 	middleware.ServeCors(r)
+	r.Use(middleware.AuthMiddleware(whitelist))
 	// 创建处理器实例
 	adminHandler := &controller.AdminHandler{}
 	userHandler := &controller.UserHandler{}

@@ -8,16 +8,16 @@ type UserDTO struct {
 	Name      string
 	StudentId uint
 	Grade     string
+	Role      uint
 	ClientIp  string
 }
 
-func NewUserDTO(ID uint, name string, CreatedAt time.Time, studentID uint, grade string, clientIP string) *UserDTO {
+func NewUserDTO(ID uint, name string, role uint, studentID uint, clientIP string) *UserDTO {
 	return &UserDTO{
 		ID:        ID,
 		Name:      name,
-		CreatedAt: CreatedAt,
+		Role:      role,
 		StudentId: studentID,
-		Grade:     grade,
 		ClientIp:  clientIP,
 	}
 }

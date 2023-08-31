@@ -4,6 +4,7 @@ import (
 	"GolandProjects/School-Management/dao"
 	"GolandProjects/School-Management/models"
 	"GolandProjects/School-Management/utils"
+	"context"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -76,10 +77,24 @@ func getAllUser() {
 	db.Find(&users)
 	fmt.Println(users)
 }
+func testRedis() {
+	client := utils.GetRedisClient()
+	ctx := context.Background()
+
+	exists, err := client.Exists(ctx, "key").Result()
+	fmt.Println(exists)
+	fmt.Println(err)
+
+}
 func main() {
-	utils.SetupDB()
+	//utils.SetupDB()
 	//testAddUser()
 	//testPasswordEncrypt()
 	//testJWT()
-	getAllUser()
+	//getAllUser()
+	err := bcrypt.CompareHashAndPassword([]byte("$2a$10$/CVrIYZ88lOALL3z.croned6UC7SXqgGNHHDAxIkmre63wxA37jU."), []byte("test123"))
+	fmt.Println(err == nil)
+	str := "/schoolManagement/admin/createUser"
+	s := str[18:23]
+	fmt.Println(s)
 }

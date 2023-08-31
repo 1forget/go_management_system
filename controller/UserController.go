@@ -1,23 +1,7 @@
-// Package classification My cool service.
-//
-// the purpose of this service is to provide a
-// mecahnism for experts to do their things.
-//
-//	Schemes: http
-//	Host: localhost:8080
-//	Version: 0.0.1
-//	License: MIT http://opensource.org/licenses/MIT
-//
-//	Consumes:
-//	- application/json
-//
-//	Produces:
-//	- application/json
-//
-// swagger:meta
 package controller
 
 import (
+	"GolandProjects/School-Management/bean"
 	"GolandProjects/School-Management/dao"
 	"GolandProjects/School-Management/middleware"
 	"GolandProjects/School-Management/models"
@@ -25,26 +9,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
+	"github.com/mitchellh/mapstructure"
 )
 
 type UserHandler struct{}
 
 func (uh *UserHandler) SetupRouter(r *gin.Engine) {
 
-	//白名单
-	whitelist := []string{
-		"/user/CreateUser",
-		"/user/Login",
-	}
-
-	userGroup := r.Group("/user", middleware.AuthMiddleware(whitelist))
+	userGroup := r.Group("/schoolManagement/user")
 	// 在 userGroup 路由组内定义需要使用前缀的路由
-	userGroup.POST("/Login", uh.Login)
-	userGroup.PUT("/UpdateUser", uh.UpdateUser)
-	userGroup.DELETE("/DeleteUser", uh.DeleteUser)
-	userGroup.POST("/CreateUser", uh.CreateUser)
-	userGroup.GET("/GetUser", uh.GetUser)
+	userGroup.POST("/login", uh.Login)
+	userGroup.PUT("/updateUser", uh.UpdateUser)
+	userGroup.DELETE("/deleteUser", uh.DeleteUser)
+	userGroup.POST("/createUser", uh.CreateUser)
+	userGroup.GET("/getUser", uh.GetUser)
 }
 
 // curl -X POST -H "Content-Type: application/json" -d "{\"studentId\": 12, \"password\": \"pass12\"}" http://localhost:8080/user/CreateUser
@@ -53,32 +31,16 @@ func (uh *UserHandler) CreateUser(c *gin.Context) {
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": "Invalid JSON"})
+		bean.ResponseError(c, 400, "Invalid JSON")
 		return
 	}
 	err := dao.AddUser(user)
 	if err != nil {
-		c.JSON(201, gin.H{"message": "Add Failure"})
+		bean.ResponseError(c, 500, "Add Failure")
 		return
 	}
-	c.JSON(200, gin.H{"message": "User Add Success"})
+	bean.ResponseSuccess(c, "User Add Success")
 }
-
-// swagger:operation POST /user/Login user addUser
-// ---
-// summary: 登录
-// description: 用于系统用户的登录
-// parameters:
-//   - name: studentId
-//     in: body
-//     description: 学号
-//     type: int
-//     required: true
-//   - name: password
-//     in: body
-//     description: 密码
-//     type: string
-//     required: true
 
 // curl -X POST -H "Content-Type: application/json" -d "{\"studentId\": 12, \"password\": \"pass12\"}" http://localhost:8080/user/Login
 // login
@@ -87,7 +49,7 @@ func (uh *UserHandler) Login(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&user); err != nil {
 		fmt.Println(err)
-		c.JSON(400, gin.H{"error": "Invalid JSON"})
+		bean.ResponseError(c, 400, "Invalid JSON")
 		return
 	}
 
@@ -96,46 +58,70 @@ func (uh *UserHandler) Login(c *gin.Context) {
 	fmt.Println(userToken)
 
 	if userToken == "用户名或密码错误" {
-		c.JSON(200, gin.H{"message": "Login Failure"})
+		bean.ResponseError(c, 403, "用户名或密码错误")
 		return
 	}
-	c.JSON(200, gin.H{"message": "Login Success", "JWT": userToken})
+	bean.ResponseWithToken(c, "login success", userToken)
 }
 
 // curl -X PUT -H "Content-Type: application/json" -H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRCI6NiwiY2xpZW50SVAiOiIxMjcuMC4wLjEiLCJjcmVhdGVkQXQiOiIyMDIzLTA4LTI0VDEzOjQ5OjU4LjcyNjQwOCswODowMCIsImV4cCI6MTY5Mjk0NDUzNywiZ3JhZGUiOiIiLCJwYXNzd29yZCI6IiQyYSQxMCRaYWNIWFJ2MzNFQ1dyMWlGSjVheHdPREN3TVF0NmlBd3lJSnBhUTZJMXViVy5YNTFndmhmTyIsInN0dWRlbnRfaWQiOjEyLCJ1c2VybmFtZSI6IiJ9.YaJVABRHffodGi72dETOuw1hap1NCDP5IM8T-Ga5zzc" -d "{\"studentId\": 12, \"password\": \"pass12\",\"grade\": \"pass12\"}" http://localhost:8080/user/UpdateUser
 func (uh *UserHandler) UpdateUser(c *gin.Context) {
-	//验证token
+	//验证token 并取出token里的值
 	tokenString := c.GetHeader("Authorization")
 
 	token, err2 := utils.GetJWTManager().VerifyToken(tokenString)
 	if err2 != nil {
-		c.JSON(401, "Unauthorized")
+		bean.ResponseError(c, 401, "Unauthorized")
+		return
+	}
+	//将请求体中的json数据映射到userUpdateInfo中
+	var userUpdateInfo bean.UpdateUserInfoRequest
+	if err := c.ShouldBindJSON(&userUpdateInfo); err != nil {
+		bean.ResponseError(c, 400, "Invalid JSON")
+		return
+	}
+	//若改变密码
+	if userUpdateInfo.Password != "" {
+		//验证旧密码 是否有效
+		userExists := dao.VerifyUser(userUpdateInfo.OldPassword, token.StudentId)
+		if !userExists {
+			bean.ResponseError(c, 400, "Wrong Old PassWord")
+			return
+		}
+	}
+	//将请求体中的user映射到实体类中的user中
+	var user models.User
+	err := mapstructure.Decode(userUpdateInfo, &user)
+
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Failed to read request body"})
-		return
-	}
-	var user models.User
-	err = json.Unmarshal([]byte(body), &user)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
 	user.ID = token.ID
-	fmt.Println(user)
+	user.StudentId = token.StudentId
+
 	updateErr := dao.UpdateUser(user)
+	fmt.Println(user.ToString())
 	if updateErr != nil {
-		c.JSON(500, "Update Failure")
+		bean.ResponseError(c, 500, "Update Failure")
 	}
-	//重新签发token
-	ip := middleware.GetIP(c)
-	userToken := dao.UserLogin(user, ip)
-	//使旧的token过期
-	utils.SetExpiredToken(tokenString, ip)
-	c.JSON(200, gin.H{"message": "Update Success", "JWT": userToken})
+
+	//token中保存了name id和studentId（不可改）
+	//只有在改变了name才需要重新签发token
+	userToken := ""
+	if user.Name != "" {
+		ip := middleware.GetIP(c)
+		userToken, _ = utils.GetJWTManager().GenerateToken(user, ip)
+		//使旧的token过期
+		utils.SetExpiredToken(tokenString, ip)
+	}
+	//判断是否要重新生成token
+	if userToken != "" {
+		bean.ResponseWithToken(c, "update token", userToken)
+	} else {
+		bean.ResponseSuccess(c, "update success")
+	}
 
 }
 
@@ -149,16 +135,28 @@ func (uh *UserHandler) DeleteUser(c *gin.Context) {
 		c.JSON(401, "Unauthorized")
 		return
 	}
+	var deleteRequest bean.UserDeleteRequest
+	if err := c.ShouldBindJSON(&deleteRequest); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	//验证用户密码是否正确
+	userExists := dao.VerifyUser(deleteRequest.Password, token.StudentId)
+	if !userExists {
+		bean.ResponseError(c, 401, "Wrong Old PassWord")
+		return
+	}
 
 	err2 = dao.DeleteUserByUserId(token.ID)
 	if err2 != nil {
-		c.JSON(500, "Delete Failure")
+		bean.ResponseError(c, 500, "Delete Failure")
+
 		return
 	}
 	ip := middleware.GetIP(c)
 	utils.SetExpiredToken(tokenString, ip)
-	c.JSON(200, "Delete Success")
 
+	bean.ResponseSuccess(c, "Delete Success")
 }
 
 // curl -X GET -H "Content-Type: application/json" -H "Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRCI6NywiY2xpZW50SVAiOiIxMjcuMC4wLjEiLCJjcmVhdGVkQXQiOiIyMDIzLTA4LTI0VDE0OjMyOjU2LjU1NTY3MiswODowMCIsImV4cCI6MTY5Mjk0NTQ4MCwiZ3JhZGUiOiIiLCJwYXNzd29yZCI6IiQyYSQxMCR2V1BFMmJINS9yLjJSS3V5M0svNy8uSGlrUndnVFUzR29rTEl1UnRaV3k0YTZBblFFNW53bSIsInN0dWRlbnRfaWQiOjEzLCJ1c2VybmFtZSI6IiJ9.tZJN4rM4dnNtQSGgX-nWgSHlOPBMZilwxQRowexZmdY"  http://localhost:8080/user/GetUser
@@ -171,6 +169,13 @@ func (uh *UserHandler) GetUser(c *gin.Context) {
 		c.JSON(401, "Unauthorized")
 		return
 	}
-	c.JSON(200, gin.H{"message": token})
+	user := dao.GetUserById(token.ID)
+	user.Password = ""
+	userJsonData, err := json.Marshal(user)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	bean.ResponseSuccess(c, string(userJsonData))
 
 }

@@ -66,9 +66,30 @@ func UserLogin(user models.User, clientIP string) string {
 
 	return token
 }
+func VerifyUser(password string, studentId uint) bool {
+	db := utils.GetDB()
+	//用户不存在
+	var user models.User
+	db.First(&user, "student_id=?", studentId)
+	if user.IsEmpty() {
+		return false
+	}
+	//使用 bcrypt 进行密码解密  第二个字符是待验证的密码
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return false
+	}
+	return true
+}
 func DeleteUserByUserId(userID uint) error {
 	db := utils.GetDB()
 	var user models.User
 	result := db.Delete(&user, userID)
 	return result.Error
+}
+func GetUserById(id uint) models.User {
+	db := utils.GetDB()
+	var user models.User
+	db.First(&user, "id=?", id)
+	return user
 }

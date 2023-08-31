@@ -10,41 +10,357 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "the purpose of this service is to provide a\nmecahnism for experts to do their things.",
-    "title": "My cool service.",
-    "license": {
-      "name": "MIT",
-      "url": "http://opensource.org/licenses/MIT"
-    },
-    "version": "0.0.1"
+    "description": "学生信息管理系统.",
+    "title": "School Management  API.",
+    "version": "1.0.0"
   },
   "host": "localhost:8080",
+  "basePath": "/schoolManagement",
   "paths": {
-    "/user/Login": {
-      "post": {
-        "description": "用于系统用户的登录",
-        "tags": [
-          "user"
+    "/admin/getAllUser": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": [
+              "[]"
+            ]
+          }
         ],
-        "summary": "登录",
-        "operationId": "addUser",
+        "description": "管理员修改学生个人信息接口",
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "getAllUser",
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/admin/updateUser": {
+      "put": {
+        "security": [
+          {
+            "BearerAuth": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "管理员修改学生个人信息接口",
+        "tags": [
+          "Admin"
+        ],
+        "operationId": "adminUpdateUser",
         "parameters": [
           {
-            "type": "int",
-            "description": "学号",
-            "name": "studentId",
+            "description": "管理员修改用户个人信息",
+            "name": "Body",
             "in": "body",
-            "required": true
-          },
-          {
-            "type": "string",
-            "description": "密码",
-            "name": "password",
-            "in": "body",
-            "required": true
+            "schema": {
+              "$ref": "#/definitions/AdminUpdateUserRequest"
+            }
           }
-        ]
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
       }
+    },
+    "/user/createUser": {
+      "post": {
+        "description": "学生注册接口",
+        "tags": [
+          "Public"
+        ],
+        "operationId": "createUser",
+        "parameters": [
+          {
+            "description": "注册需要提供 学号 姓名 密码 年级",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UserCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/user/deleteUser": {
+      "delete": {
+        "security": [
+          {
+            "BearerAuth": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "学生删除个人信息接口",
+        "tags": [
+          "User"
+        ],
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "description": "学生删除自己账户需要提供密码, 管理员删除学生账户不需要提供密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UserDeleteRequest"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/user/getUser": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "获取学生/管理员信息接口",
+        "tags": [
+          "User"
+        ],
+        "operationId": "getUser",
+        "responses": {
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/user/login": {
+      "post": {
+        "description": "学生登录接口",
+        "tags": [
+          "Public"
+        ],
+        "operationId": "login",
+        "parameters": [
+          {
+            "description": "用于学生和管理员登录 需要提供 学号（学工号） + 密码",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UserLoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/withTokenResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    },
+    "/user/updateUser": {
+      "put": {
+        "security": [
+          {
+            "BearerAuth": [
+              "[]"
+            ]
+          }
+        ],
+        "description": "学生修改个人信息接口",
+        "tags": [
+          "User"
+        ],
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "description": "修改密码则需要提供旧密码和新密码 不允许改变学号",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/UpdateUserInfoRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/withTokenResponse"
+          },
+          "default": {
+            "$ref": "#/responses/response"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "AdminUpdateUserRequest": {
+      "type": "object",
+      "properties": {
+        "ID": {
+          "type": "integer",
+          "format": "uint64"
+        },
+        "grade": {
+          "type": "string",
+          "x-go-name": "Grade"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "studentId": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "StudentID"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "CommonResult": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "UpdateUserInfoRequest": {
+      "type": "object",
+      "properties": {
+        "grade": {
+          "type": "string",
+          "x-go-name": "Grade"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "newPassword": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "oldPassword": {
+          "type": "string",
+          "x-go-name": "OldPassword"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "UserCreateRequest": {
+      "type": "object",
+      "properties": {
+        "grade": {
+          "type": "string",
+          "x-go-name": "Grade"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "studentId": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "StudentID"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "UserDeleteRequest": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "UserLoginRequest": {
+      "type": "object",
+      "properties": {
+        "password": {
+          "type": "string",
+          "x-go-name": "Password"
+        },
+        "studentId": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "StudentId"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    },
+    "WithTokenResult": {
+      "description": "因为没有泛型 存入token必须新加一个Response",
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "success": {
+          "type": "boolean",
+          "x-go-name": "Success"
+        },
+        "token": {
+          "type": "string",
+          "x-go-name": "Token"
+        }
+      },
+      "x-go-package": "GolandProjects/School-Management/bean"
+    }
+  },
+  "responses": {
+    "response": {
+      "description": "默认返回的的Response",
+      "schema": {
+        "$ref": "#/definitions/CommonResult"
+      }
+    },
+    "withTokenResponse": {
+      "description": "加上token返回的Response",
+      "schema": {
+        "$ref": "#/definitions/WithTokenResult"
+      },
+      "headers": {
+        "Body": {}
+      }
+    }
+  },
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
     }
   }
 }

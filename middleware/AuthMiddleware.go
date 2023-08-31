@@ -25,15 +25,21 @@ func AuthMiddleware(whitelist []string) gin.HandlerFunc {
 		//判断token是否已被动过期 即在黑名单中
 		if exists := utils.IsIncludeExpiredToken(tokenString); exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+			return
 		}
 		token, err := utils.GetJWTManager().VerifyToken(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+			return
 		}
 		// 在这里 验证ip
 		//执行Token验证逻辑
 		if tokenString != "" && token.ClientIp == GetIP(c) {
-
+			substr := path[18:23]
+			//管理员验证token 管理员的Role字段为1
+			if substr == "admin" && token.Role < 1 {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+			}
 			c.Next() // 继续执行下一个处理程序
 		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})

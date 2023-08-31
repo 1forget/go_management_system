@@ -3,7 +3,6 @@ package utils
 import (
 	"GolandProjects/School-Management/models"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"gopkg.in/yaml.v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -33,7 +32,6 @@ type Configuration struct {
 }
 
 var DB *gorm.DB // 包级别的变量，用于存储连接池
-var redisClient *redis.Client
 
 func SetUpTable() {
 	var config Configuration
@@ -49,7 +47,6 @@ func SetUpTable() {
 		fmt.Println(err)
 	}
 	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.Admin{})
 }
 
 func SetupDB() {
@@ -85,32 +82,7 @@ func SetupDB() {
 	sqlDB.SetMaxIdleConns(config.Database.MaxIdleConns) // 设置最大空闲连接数
 	sqlDB.SetConnMaxLifetime(time.Hour)                 // 设置连接的最大生存时间
 }
-func setUpRedis() {
-	data, err := os.ReadFile("./config/config.yml")
-	if err != nil {
-		log.Fatalf("error reading config file: %v", err)
-	}
 
-	var config Configuration
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		log.Fatalf("error unmarshaling config: %v", err)
-	}
-
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     config.Redis.Address, // Redis服务器地址
-		Password: "",                   // 密码
-		DB:       0,                    // 使用的数据库索引
-	})
-
-}
-
-func GetRedisClient() *redis.Client {
-	if DB == nil {
-		panic("can not connect redis")
-	}
-	return redisClient
-}
 func GetDB() *gorm.DB {
 	if DB == nil {
 		panic("can not connect DB")
